@@ -1,6 +1,6 @@
 # YOM Streaming Demo
 
-A runnable reference for YOM's Node.js polling worker, Azure Functions backend, and plain-JavaScript streaming player. It demonstrates Repro integration around the platform, **not instrumentation inside the game**. It is not a replica of YOM's production architecture.
+A streaming demo showing how to integrate Repro with a Node.js polling worker, Azure Functions, and a plain-JavaScript player. Follow a game session from browser actions through backend execution to gameplay video and debugging evidence.
 
 ## Architecture
 
@@ -22,25 +22,25 @@ flowchart LR
     API -.->|"Node SDK; durable Azure Storage export"| Repro
 ```
 
-**One launch:** Functions inserts a job; the worker claims it, checks capacity and starts the game host. Socket.IO negotiates WebRTC. The iframe receives video and sends controls; Functions settles the session when it ends. PostgreSQL stores business data, not Repro recordings. Azurite emulates Azure Storage locally.
+**One launch:** Functions inserts a job; the worker claims it, checks capacity and starts the game host. Socket.IO negotiates WebRTC. The iframe receives video and sends controls; Functions settles the session when it ends. PostgreSQL stores jobs, stream state and settlements. Azurite emulates Azure Storage locally.
 
 ## Integrations And YOM Mapping
 
 | Integration | What runs here / how capture works | Compare with YOM |
 | --- | --- | --- |
-| Plain JS | Browser SDK initializes before app/network code in `public/app/repro.mjs`. Captures DOM replay, UI actions and HTTP evidence; no React required. | Same integration point in your streaming website. |
-| Owned cross-origin iframe | SDK also initializes inside the player. Explicit parent/child origin checks associate iframe evidence with the parent's recording. | You confirmed the player page can include the SDK. Use your real origins. |
-| WebRTC + optional video | Real video tracks and input data channel. Captures connection/statistics evidence; optional media records presented gameplay alongside replay. rrweb alone does not reproduce game pixels. | Uses local Chromium instead of your native game/GPU host; no TURN, cloud networking or codec-scale validation. |
-| Socket.IO | Exchanges signaling messages; SDK observes underlying WebSocket lifecycle. | Not a promise to capture arbitrary Socket.IO event bodies. Compare your signaling and reconnect flow. |
-| Polling Node worker | A separate child process polls HTTP and runs jobs without an HTTP listener. Node SDK starts before worker imports. `job-transport.mjs` publishes enqueue/dispatch hooks and carries context through the stored job. | This small adapter is for our custom queue. Map it to your job envelope/transport; arbitrary polling cannot infer job boundaries automatically. No per-business-function wrappers. |
-| Azure Functions | Actual Node programming model v4, run by Core Tools. SDK initializes before function registration. Requests, invocation traces and database evidence follow browser admission. Export uses an SDK-managed Storage queue; not an Express backend. | Validate your trigger types, Node/runtime version, storage permissions and hosting plan. This demo exercises HTTP triggers, not every Azure trigger. |
-| PostgreSQL | Job claims use leases; stream state, input acknowledgements and settlements are persisted. Repro captures queries/results. | A demo database choice, not an assumption about YOM's database. |
+| Plain JS | Browser SDK initializes before app/network code in `public/app/repro.mjs`. Captures DOM replay, UI actions and HTTP evidence. | Initialize the SDK at the same point in your streaming website. |
+| Owned cross-origin iframe | SDK also initializes inside the player. Parent/child origin checks associate iframe evidence with the parent's recording. | Initialize the SDK in both pages and configure your parent/player origins. |
+| WebRTC + optional video | Video tracks carry gameplay; a data channel carries controls. Repro captures connection statistics and optionally records presented gameplay alongside DOM replay. | This demo uses a local Chromium game host and direct ICE connections. Keep your game host and player ICE/STUN/TURN configuration. |
+| Socket.IO | Exchanges signaling messages. Captured evidence covers the underlying WebSocket connection lifecycle. | Map this to your signaling and reconnect flow. |
+| Polling Node worker | A separate child process polls HTTP and runs jobs without an HTTP listener. Node SDK starts before worker imports. `job-transport.mjs` publishes enqueue/dispatch hooks and carries context through the stored job. | Connect the transport adapter to your job envelope and polling mechanism. |
+| Azure Functions | Node programming model v4 HTTP triggers, run by Core Tools. SDK initializes before function registration. Requests, invocation traces and database evidence follow browser admission. Export uses an SDK-managed Storage queue. | Map the bootstrap to your Functions entry point and configure Azure Storage access for export. |
+| PostgreSQL | Job claims use leases; stream state, input acknowledgements and settlements are persisted. Repro captures queries/results. | Compare the demo's job and settlement storage with your existing data layer. |
 
-All browser users share a **synthetic demo actor**. Production needs your authenticated actor IDs, capture policy and real queue/auth contracts. This localhost demo is not a production deployment template.
+The demo uses a shared synthetic actor ID. For your integration, use authenticated actor IDs and your capture policy.
 
 ## Run Locally
 
-Requires **Node 22**, **Docker running**, and Chrome/Chromium. Validated on macOS; process-group shutdown also assumes a Unix-like OS. No Azure subscription, Tilt, Repro account or cloud database is needed for the baseline.
+Requires **Node 22**, **Docker running**, and Chrome/Chromium on a Unix-like OS; tested on macOS. The baseline runs locally using Core Tools, PostgreSQL and Azurite.
 
 ```sh
 git clone git@github.com:getrepro/repro-yom-demo-app.git
@@ -54,7 +54,7 @@ npm run dev
 
 Open **http://127.0.0.1:5385**. Launch a game, play, then end the session. Ctrl+C stops the worker, Functions and disposable containers; demo business data is discarded. First startup downloads the Functions extension bundle. Ports are configurable in `.env.local`.
 
-BananaBread is an existing open-source FPS downloaded at a pinned commit; see [game notices](GAME-NOTICES.md). Circuit is the smaller synthetic game used for fault tests. Neither requires modifying the original game to capture the surrounding platform.
+BananaBread is an existing open-source FPS downloaded at a pinned commit; see [game notices](GAME-NOTICES.md). Circuit is the smaller game used for fault tests. Both run on the worker's game host; Repro integrates with the player and backend services.
 
 ## Enable Repro
 
@@ -88,7 +88,7 @@ After recording, inspect replay/video, UI actions, Functions requests/traces, wo
 
 `npm test`: domain/configuration safety. `npm run test:e2e`: real PostgreSQL/Azurite, Functions, worker, Chromium, WebRTC and failure/recovery paths. `npm run test:game`: actual FPS video, controls and settlement. Both browser suites force capture off.
 
-After installing the feature SDKs, `npm run test:capture` verifies correlated SDK evidence against a **local admission/ingest stub**. It does not verify remote persistence, media storage, billing or viewer completion; inspect a recording in the configured Repro environment for those.
+After installing the feature SDKs, `npm run test:capture` verifies correlated SDK evidence against a local admission/ingest stub. To check the full capture pipeline, record a session against your configured Repro environment and inspect it in the viewer.
 
 ## File Map
 
