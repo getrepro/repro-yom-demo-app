@@ -6,12 +6,12 @@ A streaming demo showing how to integrate Repro with a Node.js polling worker, A
 
 ```mermaid
 flowchart LR
-    UI["Plain JS app :5385"] -->|"HTTP via local proxy"| API["Azure Functions / Node.js"]
+    UI["Plain JS app"] -->|"HTTP via local proxy"| API["Azure Functions / Node.js"]
     API -->|"jobs, stream state, settlement"| DB[("Local PostgreSQL")]
     Worker["Polling Node worker"] -->|"poll / claim / report"| API
     Worker -->|"reserve capacity"| API
     Worker -->|"launch"| Host["Chromium game host<br/>BananaBread or Circuit"]
-    UI -->|"owns cross-origin iframe"| Player["Player :5386"]
+    UI -->|"owns cross-origin iframe"| Player["Player iframe"]
     Host <-->|"Socket.IO signaling"| Signal["Local signaling service"]
     Signal <-->|"offer / answer / ICE"| Player
     Host -->|"WebRTC video"| Player
@@ -23,6 +23,8 @@ flowchart LR
 ```
 
 **One launch:** Functions inserts a job; the worker claims it, checks capacity and starts the game host. Socket.IO negotiates WebRTC. The iframe receives video and sends controls; Functions settles the session when it ends. PostgreSQL stores jobs, stream state and settlements. Azurite emulates Azure Storage locally.
+
+BananaBread is an existing open-source FPS; Circuit is the smaller game used for fault scenarios. Both run on the worker's game host. See [game notices](GAME-NOTICES.md) for upstream attribution.
 
 ## Integrations And YOM Mapping
 
@@ -36,48 +38,15 @@ flowchart LR
 | Azure Functions | Node programming model v4 HTTP triggers, run by Core Tools. SDK initializes before function registration. Requests, invocation traces and database evidence follow browser admission. Export uses an SDK-managed Storage queue. | Map the bootstrap to your Functions entry point and configure Azure Storage access for export. |
 | PostgreSQL | Job claims use leases; stream state, input acknowledgements and settlements are persisted. Repro captures queries/results. | Compare the demo's job and settlement storage with your existing data layer. |
 
-The demo uses a shared synthetic actor ID. For your integration, use authenticated actor IDs and your capture policy.
+## How Evidence Stays Connected
 
-## Run Locally
+The parent page starts the recording and shares its session context with the owned player iframe. HTTP correlation links browser activity to Azure Functions. The queue adapter stores that context with the job and restores it when the worker executes the job.
 
-Requires **Node 22**, **Docker running**, and Chrome/Chromium on a Unix-like OS; tested on macOS. The baseline runs locally using Core Tools, PostgreSQL and Azurite.
+Repro's viewer brings together UI replay, optional gameplay video, requests, function traces and database evidence. The same session is available to an AI agent through Repro MCP. When gameplay ends, the iframe remains attached until its capture uploads finish.
 
-```sh
-git clone git@github.com:getrepro/repro-yom-demo-app.git
-cd repro-yom-demo-app
-npm ci
-npx playwright install chromium
-npm run game:install
-cp .env.example .env.local
-npm run dev
-```
+## Demo Scenarios
 
-Open **http://127.0.0.1:5385**. Launch a game, play, then end the session. Ctrl+C stops the worker, Functions and disposable containers; demo business data is discarded. First startup downloads the Functions extension bundle. Ports are configurable in `.env.local`.
-
-BananaBread is an existing open-source FPS downloaded at a pinned commit; see [game notices](GAME-NOTICES.md). Circuit is the smaller game used for fault tests. Both run on the worker's game host; Repro integrates with the player and backend services.
-
-## Enable Repro
-
-Use the YOM feature SDK builds and compatible Repro environment supplied by Repro.
-
-```sh
-npm install --no-save --package-lock=false --legacy-peer-deps /path/to/node-sdk-feature.tgz /path/to/react-sdk-feature.tgz
-```
-
-In `.env.local`, set `REPRO_ENABLED=true` and fill in your application's IDs, server-side app secret, API, collector and viewer URLs. Restart `npm run dev`. The pre-release packages have broad framework peer requirements; `--legacy-peer-deps` avoids applying those to this plain-JS app. Startup rejects missing feature packages; reinstall them after `npm ci`.
-
-| Setting | Effect |
-| --- | --- |
-| `REPRO_CAPTURE_MODE=staging` | Authenticate in the Repro widget, start recording, launch/play/end a game, then Stop & Report. Promote in the viewer if requested. |
-| `REPRO_CAPTURE_MODE=live`, `REPRO_SAMPLE_RATE=1` | Automatically captures admitted activity; use 0-1 sampling. Browser-driven Functions follow that admission; the worker restores the job's capture context. |
-| `REPRO_MEDIA_ENABLED=true` | Adds gameplay video. Requires a media-enabled Repro API and storage configured by Repro. Optional `REPRO_MEDIA_API_BASE_URL` overrides the API for media routes. |
-| `REPRO_CAPTURE_RAW=true` | Suitable only for this synthetic demo. For real data, use an approved policy and matching `REPRO_PRIVACY_ENVIRONMENT`, then disable raw capture. |
-
-After recording, inspect replay/video, UI actions, Functions requests/traces, worker execution and database evidence in Repro. Your AI agent can investigate the same session through Repro MCP. Media upload can finish after gameplay ends; the retiring iframe is kept attached while it drains.
-
-## Scenarios And Checks
-
-| Select in the app | Expected incident |
+| Scenario | What it demonstrates |
 | --- | --- |
 | Healthy session | Video, controls and settlement agree with the contract. |
 | No GPU capacity / Capacity service unavailable | Explicit failure, no successful allocation or charge. Capacity check retries recovers from one transient 503. |
@@ -86,18 +55,14 @@ After recording, inspect replay/video, UI actions, Functions requests/traces, wo
 | Game host freezes / Player stops presenting | Distinguishes a stopped source from a paused display while network traffic continues. |
 | Input delivery delayed / Freeze after three minutes | 750 ms control delay / source freeze after 185 seconds. |
 
-`npm test`: domain/configuration safety. `npm run test:e2e`: real PostgreSQL/Azurite, Functions, worker, Chromium, WebRTC and failure/recovery paths. `npm run test:game`: actual FPS video, controls and settlement. Both browser suites force capture off.
-
-After installing the feature SDKs, `npm run test:capture` verifies correlated SDK evidence against a local admission/ingest stub. To check the full capture pipeline, record a session against your configured Repro environment and inspect it in the viewer.
-
 ## File Map
 
 | File(s) | Purpose |
 | --- | --- |
 | `src/bootstrap.mjs` | Loads `.env.local`, validates optional capture, selects startup mode. |
-| `src/dev.mjs` / `src/start.mjs` | Disposable full demo / existing dedicated local PostgreSQL via `YOM_DEMO_DATABASE_URL` and `npm start`. |
+| `src/dev.mjs` / `src/start.mjs` | Start the application with disposable or existing local PostgreSQL. |
 | `src/server.mjs` | Static app/player origins, Functions HTTP proxy, Socket.IO signaling and disconnected-player cleanup. |
-| `src/repro-config.mjs` | SDK configuration, feature-build checks, safe browser config and worker initialization. |
+| `src/repro-config.mjs` | SDK options, browser-safe configuration and worker initialization. |
 | `src/agent.mjs` | Polls/claims jobs, allocates and manages Chromium game hosts. |
 | `src/agent-process.mjs` / `src/fork-agent.mjs` | Initialize capture before worker code; spawn and gracefully drain the independent worker process. |
 | `src/job-transport.mjs` | Custom polling queue's enqueue/dispatch correlation adapter. |
