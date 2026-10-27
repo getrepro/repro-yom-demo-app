@@ -1,0 +1,9 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuit streaming player</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#101918;color:#e5eee9;font-family:Arial,sans-serif}
+video{width:100%;height:100%;object-fit:contain;display:block;touch-action:none}#connection{position:absolute;top:16px;left:16px;right:16px;display:flex;gap:8px;align-items:center}#status{padding:8px 12px;background:#142823e8;border:1px solid #436154;border-radius:4px;font-size:12px;overflow-wrap:anywhere}
+#controls{position:absolute;bottom:16px;right:16px;display:flex;gap:6px}button{color:#e5eee9;background:#20372dea;border:1px solid #597e67;border-radius:4px;width:40px;height:36px;font-size:18px;cursor:pointer}
+button svg{width:18px;height:18px;vertical-align:middle}#retry{flex-shrink:0}
+</style></head><body tabindex="0"><video id="stream" autoplay muted playsinline></video><div id="connection"><div id="status" role="status">Connecting to game host</div><button id="retry" aria-label="Retry stream" title="Retry stream" hidden><i data-lucide="rotate-cw"></i></button></div>
+<div id="controls"><button data-code="ArrowLeft" aria-label="Steer left">&larr;</button><button data-code="ArrowUp" aria-label="Accelerate">&uarr;</button><button data-code="ArrowRight" aria-label="Steer right">&rarr;</button><button id="fire" aria-label="Fire" title="Fire" hidden><i data-lucide="crosshair"></i></button></div>
+<script src="/assets/lucide.js"></script><script type="module" src="/player.mjs"></script></body></html>

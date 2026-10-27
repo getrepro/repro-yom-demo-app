@@ -1,0 +1,33 @@
+{
+  "name": "repro-yom-demo-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "dev": "node src/bootstrap.mjs --dev",
+    "start": "node src/bootstrap.mjs",
+    "game:install": "node scripts/install-game.mjs",
+    "test": "node --test test/domain.test.mjs test/config.test.mjs",
+    "test:e2e": "node --test test/streaming.testcontainers.mjs",
+    "test:game": "node --test test/real-game.testcontainers.mjs",
+    "test:capture": "node --test test/capture.testcontainers.mjs"
+  },
+  "dependencies": {
+    "@azure/functions": "4.16.5",
+    "express": "4.22.3",
+    "lucide": "0.468.0",
+    "pg": "8.22.0",
+    "phaser": "3.90.0",
+    "socket.io": "4.8.1",
+    "socket.io-client": "4.8.1"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "4.15.2",
+    "node": "22.22.0",
+    "playwright": "1.57.0",
+    "testcontainers": "11.8.1"
+  }
+}

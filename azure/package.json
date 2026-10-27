@@ -1,0 +1,6 @@
+{
+  "name": "yom-demo-azure-functions",
+  "private": true,
+  "type": "module",
+  "main": "bootstrap.mjs"
+}

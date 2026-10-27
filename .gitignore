@@ -1,0 +1,11 @@
+node_modules/
+vendor/
+artifacts/
+.env*
+!.env.example
+.secrets/
+*.tgz
+*.log
+.DS_Store
+.idea/
+local.settings.json

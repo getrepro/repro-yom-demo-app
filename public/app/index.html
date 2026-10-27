@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuit | Cloud Arcade</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/" aria-label="Circuit home"><i data-lucide="orbit"></i><strong>Circuit</strong></a>
+  <div class="workspace">CLOUD ARCADE</div>
+  <a class="nav active" href="#library"><i data-lucide="gamepad-2"></i>Library</a>
+  <a class="nav" href="#history"><i data-lucide="history"></i>Recent sessions</a>
+  <div class="sidebar-bottom"><span class="avatar">JD</span><div>Jamie Davis<small>Standard membership</small></div></div>
+</aside>
+<main>
+  <header><div><span class="eyebrow">YOUR ARCADE, ANYWHERE</span><h1>Good evening, Jamie.</h1></div>
+    <div class="region"><span></span>Local game host</div></header>
+  <section id="library">
+    <div class="section-title"><h2>Your next game.</h2><span class="muted">02 games in your library</span></div>
+    <div class="game-layout">
+      <div class="game-art" role="img" aria-label="Overhead racing circuit with a lime sports car">
+        <canvas id="cover" width="1100" height="620"></canvas>
+        <div class="art-caption"><span>REPRO ARCADE ORIGINAL</span><h2>CIRCUIT / 01</h2><p>Find your line.</p></div>
+      </div>
+      <div class="launch-panel">
+        <label for="game">Game</label><select id="game"></select>
+        <span class="tag" id="game-category">ARENA FPS</span><h2 id="game-title">BananaBread</h2>
+        <p class="muted" id="game-description">Cube 2 arena shooter</p>
+        <div class="game-meta"><span><i data-lucide="monitor-play"></i>Cloud streaming</span><span><i data-lucide="keyboard"></i>Keyboard controls</span></div>
+        <div class="rate"><strong>€0.20</strong><span>/ minute</span></div>
+        <label for="quality">Stream quality</label><select id="quality"><option value="high">High / 720p / 60 fps</option><option value="standard">Standard / 540p / 30 fps</option></select>
+        <label for="scenario">Scenario</label><select id="scenario"></select>
+        <button id="launch" class="primary"><i data-lucide="play"></i>Launch game</button>
+        <div id="message" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+  <section id="active" hidden>
+    <div class="section-title"><div><h2 id="active-title">Game stream</h2><span id="session-label" class="muted">Allocating game host</span></div>
+      <button id="end" class="secondary"><i data-lucide="square"></i>End session</button></div>
+    <div id="player-container"><div class="waiting"><i data-lucide="loader-circle" class="spin"></i><span>Preparing your stream</span></div></div>
+    <div class="stream-meta"><span id="quality-label">Waiting for host</span><span id="stream-status">Connecting</span><span>€0.20 / minute</span></div>
+  </section>
+  <section id="receipt" hidden aria-live="polite"></section>
+  <section id="history"><div class="section-title"><h2>Recent sessions</h2><button id="refresh" class="icon" title="Refresh sessions" aria-label="Refresh sessions"><i data-lucide="refresh-cw"></i></button></div>
+    <div class="table-scroll"><table><thead><tr><th>Game</th><th>Started</th><th>Stream</th><th>Status</th><th>Charged</th></tr></thead><tbody id="sessions"></tbody></table></div>
+  </section>
+  <footer><span>Circuit / Repro streaming PoC</span><span>Jamie Davis / Standard membership</span></footer>
+</main>
+<script src="/assets/lucide.js"></script><script type="module" src="/repro.mjs"></script><script type="module" src="/app.mjs"></script>
+</body></html>
