@@ -58,7 +58,7 @@ BananaBread is an existing open-source FPS downloaded at a pinned commit; see [g
 
 ## Enable Repro
 
-**The public npm releases checked for this handoff do not include the YOM browser/iframe and worker/Azure features.** Obtain the two feature-package tarballs and a compatible Repro environment from Repro first. SDK source and private credentials are deliberately not included.
+Use the YOM feature SDK builds and compatible Repro environment supplied by Repro.
 
 ```sh
 npm install --no-save --package-lock=false --legacy-peer-deps /path/to/node-sdk-feature.tgz /path/to/react-sdk-feature.tgz
@@ -73,7 +73,7 @@ In `.env.local`, set `REPRO_ENABLED=true` and fill in your application's IDs, se
 | `REPRO_MEDIA_ENABLED=true` | Adds gameplay video. Requires a media-enabled Repro API and storage configured by Repro. Optional `REPRO_MEDIA_API_BASE_URL` overrides the API for media routes. |
 | `REPRO_CAPTURE_RAW=true` | Suitable only for this synthetic demo. For real data, use an approved policy and matching `REPRO_PRIVACY_ENVIRONMENT`, then disable raw capture. |
 
-After recording, inspect replay/video, UI actions, Functions requests/traces, worker execution and database evidence in Repro. Your AI agent can investigate the same session through Repro MCP; the MCP server is not part of this app. Media upload can finish after gameplay ends; the retiring iframe is kept attached while it drains.
+After recording, inspect replay/video, UI actions, Functions requests/traces, worker execution and database evidence in Repro. Your AI agent can investigate the same session through Repro MCP. Media upload can finish after gameplay ends; the retiring iframe is kept attached while it drains.
 
 ## Scenarios And Checks
 
@@ -94,11 +94,11 @@ After installing the feature SDKs, `npm run test:capture` verifies correlated SD
 
 | File(s) | Purpose |
 | --- | --- |
-| `src/bootstrap.mjs` | Loads private `.env.local`, validates optional capture, selects startup mode. |
+| `src/bootstrap.mjs` | Loads `.env.local`, validates optional capture, selects startup mode. |
 | `src/dev.mjs` / `src/start.mjs` | Disposable full demo / existing dedicated local PostgreSQL via `YOM_DEMO_DATABASE_URL` and `npm start`. |
 | `src/server.mjs` | Static app/player origins, Functions HTTP proxy, Socket.IO signaling and disconnected-player cleanup. |
 | `src/repro-config.mjs` | SDK configuration, feature-build checks, safe browser config and worker initialization. |
-| `src/agent.mjs` | Polls/claims jobs, allocates and manages Chromium game hosts. This is the demo worker, not an AI agent. |
+| `src/agent.mjs` | Polls/claims jobs, allocates and manages Chromium game hosts. |
 | `src/agent-process.mjs` / `src/fork-agent.mjs` | Initialize capture before worker code; spawn and gracefully drain the independent worker process. |
 | `src/job-transport.mjs` | Custom polling queue's enqueue/dispatch correlation adapter. |
 | `src/capacity.mjs` | Worker-side capacity request and bounded retry. |
@@ -121,5 +121,3 @@ After installing the feature SDKs, `npm run test:capture` verifies correlated SD
 | `test/capture.testcontainers.mjs` | Optional installed-SDK integration test, with local synthetic admission and ingest acknowledgements. |
 | `.env.example` / `.nvmrc` / `.gitignore` | Safe configuration template, Node version, private/generated-file exclusions. |
 | `package.json` / `package-lock.json` / `README.md` | Dependencies/commands, reproducible dependency tree and this integration guide. |
-
-Generated `vendor/`, `artifacts/`, `node_modules/` and private `.env.local` stay untracked. No Repro backend, SDK source, production credentials, session exports or internal infrastructure tools are shipped.
